@@ -1,0 +1,6 @@
+name: cnn-dog-person-classifier
+dependencies:
+  - numpy
+  - matplotlib
+  - pandas
+  - tensorflow

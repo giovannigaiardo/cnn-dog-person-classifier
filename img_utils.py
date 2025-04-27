@@ -1,11 +1,17 @@
 import os
+import logging
 from random import sample
 from PIL import Image
 from pathlib import Path
 import matplotlib.pyplot as plt
 import pandas as pd
+import numpy as np
 from tqdm import tqdm
 import tensorflow as tf
+
+logging.basicConfig(level=logging.INFO)
+
+logger = logging.getLogger("__name__", )
 
 def load_image(image_path: str)-> tf.Tensor:
     parent_folder_name = "modified_voc"
@@ -20,7 +26,7 @@ def load_images(images: pd.Series)-> list[tf.Tensor]:
         image_list.append(load_image(image_path))
     return image_list
 
-def visualize_samples(dataset_csv_path: str, samples_per_class: int):
+def visualize_samples(dataset_csv_path: str, samples_per_class: int = 10):
     classes = ["both", "none", "dog", "person"]
     dataset = pd.read_csv(dataset_csv_path)
     
@@ -52,4 +58,31 @@ def visualize_samples(dataset_csv_path: str, samples_per_class: int):
         ax.imshow(image, cmap="gray")
         ax.axis("off")
         ax.set_title(class_title)
+    return fig
+
+def visualize_errors(image_list: list[tf.Tensor], class_idx_list: list[int], rows: int = 4, cols: int = 4):
+    class_map = {
+                    0: "Dog",
+                    1: "Person"
+                }
+    rows, cols = int(rows), int(cols)
+    image_count = len(image_list)
+    if image_count != rows * cols:
+        new_rows = int(np.ceil(image_count / cols))
+        logger.warning(f"{image_count} images won't fit in {rows}x{cols} grid, using {new_rows} rows instead.")
+        rows = new_rows
+        
+    fig, axes = plt.subplots(rows, cols, figsize=(12, 12))
+
+    axes = axes.flatten()
+
+    # Iterate over images and axes to plot each image
+    for i, ax in enumerate(axes):
+        if i < image_count:  # If there are fewer images than the grid
+            ax.imshow(tf.squeeze(image_list[i]))  # Remove any extra dimensions like batch dimension
+            ax.axis('off')  
+            ax.set_title(f"Missed on class: {class_map[class_idx_list[i]]}")
+        else:
+            ax.axis('off')  # Complete with empty subplots
+            
     return fig
